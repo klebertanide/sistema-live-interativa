@@ -1,3 +1,5 @@
+# Sistema de Live Interativa - MOEDOR AO VIVO (versão corrigida para Render)
+
 import os
 import sys
 import logging
@@ -6,7 +8,6 @@ from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit, join_room, leave_room
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
-import eventlet
 import signal
 
 # Configurar path
@@ -93,10 +94,11 @@ def create_app():
     db.init_app(app)
     CORS(app, origins="*")
 
+    # Usar threading ao invés de eventlet para compatibilidade com Render
     socketio = SocketIO(
         app,
         cors_allowed_origins="*",
-        async_mode='eventlet',
+        async_mode='threading',
         ping_timeout=60,
         ping_interval=25
     )
@@ -315,6 +317,7 @@ def create_app():
                     border-radius: 5px;
                     background: rgba(255, 255, 255, 0.9);
                     color: #333;
+                    box-sizing: border-box;
                 }}
                 button {{
                     background: #3498db;
@@ -495,39 +498,48 @@ def create_app():
 
     @app.route('/api/live/update', methods=['POST'])
     def update_live():
-        data = request.get_json()
-        live = LiveSession.query.filter_by(active=True).first()
-        if not live:
-            live = LiveSession(active=True)
-            db.session.add(live)
+        try:
+            data = request.get_json()
+            live = LiveSession.query.filter_by(active=True).first()
+            if not live:
+                live = LiveSession(active=True)
+                db.session.add(live)
 
-        for field in ['title', 'live_oficial_url', 'live_mosaico_url', 'youtube_url']:
-            if field in data:
-                setattr(live, field, data[field])
+            for field in ['title', 'live_oficial_url', 'live_mosaico_url', 'youtube_url']:
+                if field in data:
+                    setattr(live, field, data[field])
 
-        db.session.commit()
-        socketio.emit('live_updated', live.to_dict())
-        return jsonify({'success': True, 'live': live.to_dict()})
+            db.session.commit()
+            socketio.emit('live_updated', live.to_dict())
+            return jsonify({'success': True, 'live': live.to_dict()})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
 
     @app.route('/api/messages/send', methods=['POST'])
     def send_message():
-        data = request.get_json()
-        name = data.get('name', '').strip()
-        content = data.get('content', '').strip()
+        try:
+            data = request.get_json()
+            name = data.get('name', '').strip()
+            content = data.get('content', '').strip()
 
-        if not name or len(name) > 50 or not content or len(content) > 250:
-            return jsonify({'success': False, 'error': 'Dados inválidos'}), 400
+            if not name or len(name) > 50 or not content or len(content) > 250:
+                return jsonify({'success': False, 'error': 'Dados inválidos'}), 400
 
-        message = Message(name=name, content=content)
-        db.session.add(message)
-        db.session.commit()
-        socketio.emit('new_message', message.to_dict())
-        return jsonify({'success': True, 'message': message.to_dict()})
+            message = Message(name=name, content=content)
+            db.session.add(message)
+            db.session.commit()
+            socketio.emit('new_message', message.to_dict())
+            return jsonify({'success': True, 'message': message.to_dict()})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
 
     @app.route('/api/messages/recent', methods=['GET'])
     def recent_messages():
-        messages = Message.query.order_by(Message.created_at.desc()).limit(10).all()
-        return jsonify({'success': True, 'messages': [m.to_dict() for m in messages]})
+        try:
+            messages = Message.query.order_by(Message.created_at.desc()).limit(10).all()
+            return jsonify({'success': True, 'messages': [m.to_dict() for m in messages]})
+        except Exception as e:
+            return jsonify({'success': False, 'error': str(e)}), 500
 
     @app.route('/api/health')
     def health():
@@ -581,6 +593,7 @@ def main():
     try:
         app, socketio = create_app()
         port = int(os.environ.get('PORT', 5000))
+        # Usar threading ao invés de eventlet
         socketio.run(app, host='0.0.0.0', port=port, debug=False)
     except Exception as e:
         print(f"Erro: {e}")
@@ -588,3 +601,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
