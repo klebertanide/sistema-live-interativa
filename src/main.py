@@ -20,45 +20,45 @@ load_dotenv()
 
 # Logging
 logging.basicConfig(
-    level=getattr(logging, os.getenv('LOG_LEVEL', 'INFO')),
-    format='%(asctime)s - %(levelname)s - %(message)s'
+level=getattr(logging, os.getenv('LOG_LEVEL', 'INFO')),
+format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
 db = SQLAlchemy()
 connected_users = set()
 
 class LiveSession(db.Model):
-    __tablename__ = 'live_sessions'
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(200), nullable=False, default='MOEDOR AO VIVO')
-    live_oficial_url = db.Column(db.String(500), nullable=True)
-    live_mosaico_url = db.Column(db.String(500), nullable=True)
-    youtube_url = db.Column(db.String(500), nullable=True)
-    active = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+__tablename__ = 'live_sessions'
+id = db.Column(db.Integer, primary_key=True)
+title = db.Column(db.String(200), nullable=False, default='MOEDOR AO VIVO')
+live_oficial_url = db.Column(db.String(500), nullable=True)
+live_mosaico_url = db.Column(db.String(500), nullable=True)
+youtube_url = db.Column(db.String(500), nullable=True)
+active = db.Column(db.Boolean, default=False)
+created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'live_oficial_url': self.live_oficial_url,
-            'live_mosaico_url': self.live_mosaico_url,
-            'youtube_url': self.youtube_url,
-            'active': self.active,
-            'created_at': self.created_at.isoformat() if self.created_at else None
-        }
+def to_dict(self):
+return {
+'id': self.id,
+'title': self.title,
+'live_oficial_url': self.live_oficial_url,
+'live_mosaico_url': self.live_mosaico_url,
+'youtube_url': self.youtube_url,
+'active': self.active,
+'created_at': self.created_at.isoformat() if self.created_at else None
+}
 
 class Message(db.Model):
-    __tablename__ = 'messages'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False)
-    content = db.Column(db.String(250), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    displayed = db.Column(db.Boolean, default=False)
+__tablename__ = 'messages'
+id = db.Column(db.Integer, primary_key=True)
+name = db.Column(db.String(50), nullable=False)
+content = db.Column(db.String(250), nullable=False)
+created_at = db.Column(db.DateTime, default=datetime.utcnow)
+displayed = db.Column(db.Boolean, default=False)
 
-    def to_dict(self):
-        return {
-            'id': self.id,
+def to_dict(self):
+return {
+'id': self.id,
             'name': self.name,
             'content': self.content,
             'created_at': self.created_at.isoformat() if self.created_at else None,
