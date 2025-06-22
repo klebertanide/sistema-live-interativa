@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlay Enquetes - MOEDOR AO VIVO</title>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: transparent;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+        
+        .overlay-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            max-height: 300px;
+            z-index: 9999;
+        }
+        
+        .poll-card {
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(30, 30, 30, 0.95));
+            border: 2px solid #ff6b6b;
+            border-radius: 20px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            transform: translateX(100%);
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .poll-card.show {
+            transform: translateX(0);
+        }
+        
+        .poll-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .poll-icon {
+            font-size: 1.5rem;
+            margin-right: 10px;
+            animation: pulse 2s infinite;
+        }
+        
+        .poll-title {
+            color: #ff6b6b;
+            font-size: 1.1rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .poll-question {
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        
+        .poll-results {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .result-item {
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            overflow: hidden;
+            height: 45px;
+        }
+        
+        .result-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+            transition: width 1s ease-out;
+            position: relative;
+        }
+        
+        .result-text {
+            position: absolute;
+            top: 50%;
+            left: 15px;
+            transform: translateY(-50%);
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+            z-index: 2;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        
+        .result-percentage {
+            position: absolute;
+            top: 50%;
+            right: 15px;
+            transform: translateY(-50%);
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            z-index: 2;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+        }
+        
+        .poll-footer {
+            margin-top: 15px;
+            text-align: center;
+            color: #ccc;
+            font-size: 0.8rem;
+        }
+        
+        .winner-announcement {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(135deg, #00b894, #00a085);
+            color: white;
+            padding: 30px 50px;
+            border-radius: 20px;
+            font-size: 2rem;
+            font-weight: 700;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.5);
+            transition: all 0.5s ease;
+        }
+        
+        .winner-announcement.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        
+        .winner-announcement.blink {
+            animation: blink 0.5s ease-in-out 6;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+        
+        .no-poll {
+            display: none;
+        }
+        
+        /* Responsivo */
+        @media (max-width: 768px) {
+            .overlay-container {
+                width: 350px;
+                bottom: 10px;
+                right: 10px;
+            }
+            
+            .poll-card {
+                padding: 20px;
+            }
+            
+            .winner-announcement {
+                font-size: 1.5rem;
+                padding: 25px 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="overlay-container">
+        <div id="pollCard" class="poll-card">
+            <!-- Conteúdo da enquete será inserido aqui -->
+        </div>
+    </div>
+    
+    <div id="winnerAnnouncement" class="winner-announcement">
+        <!-- Anúncio do vencedor será inserido aqui -->
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let currentPoll = null;
+        let lastPollId = null;
+        let showingResults = false;
+        
+        // Conectar ao WebSocket
+        socket.on('connect', function() {
+            console.log('Overlay conectado ao servidor');
+            loadCurrentPoll();
+        });
+        
+        // Receber nova enquete
+        socket.on('new_poll', function(poll) {
+            console.log('Nova enquete no overlay:', poll);
+            currentPoll = poll;
+            showingResults = false;
+            renderPoll();
+            showPollCard();
+        });
+        
+        // Receber atualização de votos
+        socket.on('poll_update', function(poll) {
+            console.log('Enquete atualizada no overlay:', poll);
+            currentPoll = poll;
+            if (showingResults) {
+                renderResults();
+            }
+        });
+        
+        // Receber fim de enquete (quando nova enquete é criada)
+        socket.on('poll_ended', function(poll) {
+            if (poll.total_votes > 0) {
+                announceWinner(poll);
+            }
+        });
+        
+        // Carregar enquete atual
+        function loadCurrentPoll() {
+            fetch('/api/polls/active')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.poll) {
+                        currentPoll = data.poll;
+                        if (currentPoll.total_votes > 0) {
+                            showingResults = true;
+                            renderResults();
+                            showPollCard();
+                        } else {
+                            renderPoll();
+                            showPollCard();
+                        }
+                    } else {
+                        hidePollCard();
+                    }
+                })
+                .catch(error => {
+                    console.error('Erro ao carregar enquete:', error);
+                    hidePollCard();
+                });
+        }
+        
+        // Renderizar enquete
+        function renderPoll() {
+            if (!currentPoll) return;
+            
+            const pollCard = document.getElementById('pollCard');
+            pollCard.innerHTML = `
+                <div class="poll-header">
+                    <div class="poll-icon">🗳️</div>
+                    <div class="poll-title">Enquete ao Vivo</div>
+                </div>
+                
+                <div class="poll-question">
+                    ${currentPoll.question}
+                </div>
+                
+                <div class="poll-results">
+                    <div class="result-item">
+                        <div class="result-fill" style="width: 0%"></div>
+                        <div class="result-text">${currentPoll.option_a}</div>
+                        <div class="result-percentage">0%</div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <div class="result-fill" style="width: 0%"></div>
+                        <div class="result-text">${currentPoll.option_b}</div>
+                        <div class="result-percentage">0%</div>
+                    </div>
+                </div>
+                
+                <div class="poll-footer">
+                    Vote em: ${window.location.origin}/polls
+                </div>
+            `;
+            
+            // Aguardar um pouco e mostrar resultados se houver votos
+            setTimeout(() => {
+                if (currentPoll && currentPoll.total_votes > 0) {
+                    showingResults = true;
+                    renderResults();
+                }
+            }, 2000);
+        }
+        
+        // Renderizar resultados
+        function renderResults() {
+            if (!currentPoll) return;
+            
+            const pollCard = document.getElementById('pollCard');
+            pollCard.innerHTML = `
+                <div class="poll-header">
+                    <div class="poll-icon">📊</div>
+                    <div class="poll-title">Resultados</div>
+                </div>
+                
+                <div class="poll-question">
+                    ${currentPoll.question}
+                </div>
+                
+                <div class="poll-results">
+                    <div class="result-item">
+                        <div class="result-fill" style="width: ${currentPoll.percentage_a}%"></div>
+                        <div class="result-text">${currentPoll.option_a}</div>
+                        <div class="result-percentage">${currentPoll.percentage_a}%</div>
+                    </div>
+                    
+                    <div class="result-item">
+                        <div class="result-fill" style="width: ${currentPoll.percentage_b}%"></div>
+                        <div class="result-text">${currentPoll.option_b}</div>
+                        <div class="result-percentage">${currentPoll.percentage_b}%</div>
+                    </div>
+                </div>
+                
+                <div class="poll-footer">
+                    Total: ${currentPoll.total_votes} votos
+                </div>
+            `;
+        }
+        
+        // Mostrar card da enquete
+        function showPollCard() {
+            const pollCard = document.getElementById('pollCard');
+            pollCard.classList.add('show');
+        }
+        
+        // Esconder card da enquete
+        function hidePollCard() {
+            const pollCard = document.getElementById('pollCard');
+            pollCard.classList.remove('show');
+        }
+        
+        // Anunciar vencedor
+        function announceWinner(poll) {
+            if (poll.total_votes === 0) return;
+            
+            const winner = poll.percentage_a > poll.percentage_b ? poll.option_a : poll.option_b;
+            const percentage = Math.max(poll.percentage_a, poll.percentage_b);
+            
+            const announcement = document.getElementById('winnerAnnouncement');
+            announcement.innerHTML = `
+                🏆 VENCEDOR! 🏆<br>
+                <div style="font-size: 1.5rem; margin-top: 10px;">
+                    ${winner}
+                </div>
+                <div style="font-size: 1.2rem; margin-top: 5px;">
+                    ${percentage}% dos votos
+                </div>
+            `;
+            
+            // Mostrar anúncio com animação
+            announcement.classList.add('show');
+            
+            // Piscar
+            setTimeout(() => {
+                announcement.classList.add('blink');
+            }, 500);
+            
+            // Esconder após 5 segundos
+            setTimeout(() => {
+                announcement.classList.remove('show', 'blink');
+            }, 5000);
+        }
+        
+        // Atualizar enquete periodicamente
+        setInterval(loadCurrentPoll, 15000); // A cada 15 segundos
+        
+        // Auto-esconder enquete após 2 minutos sem atividade
+        setInterval(() => {
+            if (currentPoll && showingResults) {
+                const timeSinceCreated = Date.now() - new Date(currentPoll.created_at).getTime();
+                if (timeSinceCreated > 2 * 60 * 1000) { // 2 minutos
+                    hidePollCard();
+                }
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
+

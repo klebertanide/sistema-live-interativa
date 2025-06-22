@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOEDOR AO VIVO - Sistema de Live Interativa</title>
+    
+    <!-- Meta Tags -->
+    <meta name="description" content="MOEDOR AO VIVO - Sistema de live interativa com chat em tempo real e múltiplas câmeras">
+    <meta name="keywords" content="live, streaming, chat, moedor, ao vivo">
+    <meta name="author" content="MOEDOR AO VIVO">
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="/static/css/variables.css">
+    <link rel="stylesheet" href="/static/css/typography.css">
+    <link rel="stylesheet" href="/static/css/main-professional.css">
+    <link rel="stylesheet" href="/static/css/user-polls.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/static/images/logo_moedor_ao_vivo.png">
+    
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+</head>
+<body>
+    <div class="main-container">
+        <!-- Header Otimizado -->
+        <header class="main-header">
+            <div class="header-content">
+                <div class="brand-section">
+                    <img src="/static/images/logo_moedor_ao_vivo.png" alt="MOEDOR AO VIVO" class="brand-logo">
+                    <div class="live-status-header" id="liveStatus">
+                        <div class="status-dot"></div>
+                        <span>VERIFICANDO...</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Live Section - ATUALIZADA PARA DUAS LIVES -->
+            <section class="live-section">
+                <h2 class="live-title" id="liveTitle">MOEDOR AO VIVO</h2>
+                
+                <!-- Live Oficial -->
+                <div class="live-player-container">
+                    <h3 class="live-subtitle">LIVE OFICIAL</h3>
+                    <div class="live-player" id="liveOficialContainer">
+                        <div class="live-placeholder">
+                            <div class="placeholder-icon">📺</div>
+                            <div class="placeholder-text">LIVE OFICIAL EM BREVE...</div>
+                            <div class="placeholder-subtitle">Aguarde o início da transmissão principal</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Mosaico -->
+                <div class="live-player-container">
+                    <h3 class="live-subtitle">LIVE MOSAICO</h3>
+                    <div class="live-player" id="liveMosaicoContainer">
+                        <div class="live-placeholder">
+                            <div class="placeholder-icon">📹</div>
+                            <div class="placeholder-text">LIVE MOSAICO EM BREVE...</div>
+                            <div class="placeholder-subtitle">Múltiplas câmeras em uma tela</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Chat Section -->
+            <section class="chat-section">
+                <h2 class="section-title">INTERAJA COM NÓIS!</h2>
+                
+                <div class="chat-container">
+                    <!-- Formulário de Mensagem -->
+                    <div class="chat-form">
+                        <form id="messageForm">
+                            <div class="form-group">
+                                <label for="userName" class="form-label">Seu Nome</label>
+                                <input 
+                                    type="text" 
+                                    id="userName" 
+                                    class="form-input" 
+                                    placeholder="Digite seu nome"
+                                    maxlength="50"
+                                    required
+                                >
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="userMessage" class="form-label">Sua Mensagem</label>
+                                <textarea 
+                                    id="userMessage" 
+                                    class="form-input form-textarea" 
+                                    placeholder="Digite sua mensagem (até 250 caracteres)"
+                                    maxlength="250"
+                                    required
+                                ></textarea>
+                                <small id="charCounter" style="color: #7f8c8d; font-size: 0.8rem;">250 caracteres restantes</small>
+                            </div>
+                            
+                            <button type="submit" id="submitMessage" class="btn btn-primary">
+                                Enviar Mensagem
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Status de Envio -->
+                    <div id="messageStatus" class="message-status" style="display: none;">
+                        <div class="status-content">
+                            <span class="status-text">Enviando mensagem...</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            
+
+        <!-- Footer -->
+        <footer class="main-footer">
+            <div class="footer-content">
+                <p>&copy; 2025 MOEDOR AO VIVO - Sistema de Live Interativa</p>
+                <div class="footer-stats">
+                    <span id="onlineUsers">0 usuários online</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // Configuração global
+        const CONFIG = {
+            socketUrl: window.location.origin,
+            maxRetries: 5,
+            retryDelay: 2000
+        };
+
+        // Estado da aplicação
+        let socket = null;
+        let retryCount = 0;
+        let currentLiveSession = null;
+
+        // Inicializar aplicação
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Inicializando MOEDOR AO VIVO...');
+            
+            initializeSocket();
+            initializeForm();
+            initializeCharCounter();
+            loadLiveStatus();
+            
+            console.log('✅ Aplicação inicializada com sucesso');
+        });
+
+        // Inicializar WebSocket
+        function initializeSocket() {
+            try {
+                socket = io(CONFIG.socketUrl, {
+                    transports: ['websocket', 'polling'],
+                    timeout: 20000,
+                    forceNew: true
+                });
+
+                socket.on('connect', function() {
+                    console.log('🔌 Conectado ao servidor');
+                    retryCount = 0;
+                    updateConnectionStatus(true);
+                    
+                    // Entrar na sala geral
+                    socket.emit('join_room', { room: 'general' });
+                });
+
+                socket.on('disconnect', function() {
+                    console.log('🔌 Desconectado do servidor');
+                    updateConnectionStatus(false);
+                    
+                    // Tentar reconectar
+                    if (retryCount < CONFIG.maxRetries) {
+                        setTimeout(() => {
+                            retryCount++;
+                            console.log(`🔄 Tentativa de reconexão ${retryCount}/${CONFIG.maxRetries}`);
+                            socket.connect();
+                        }, CONFIG.retryDelay);
+                    }
+                });
+
+                socket.on('live_updated', function(data) {
+                    console.log('📺 Live atualizada:', data);
+                    updateLivePlayer(data);
+                });
+
+                socket.on('new_message', function(data) {
+                    console.log('💬 Nova mensagem:', data);
+                    showMessageNotification(data);
+                });
+
+                socket.on('new_poll', function(data) {
+                    console.log('📊 Nova enquete:', data);
+                    updatePollsSection(data);
+                });
+
+                socket.on('new_screenshot', function(data) {
+                    console.log('📸 Novo screenshot:', data);
+                    updateScreenshotsGrid(data);
+                });
+
+            } catch (error) {
+                console.error('❌ Erro ao inicializar socket:', error);
+                updateConnectionStatus(false);
+            }
+        }
+
+        // Inicializar formulário
+        function initializeForm() {
+            const form = document.getElementById('messageForm');
+            const submitBtn = document.getElementById('submitMessage');
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('userName').value.trim();
+                const message = document.getElementById('userMessage').value.trim();
+                
+                // Validações
+                if (!name || name.length > 50) {
+                    showError('Nome inválido (máximo 50 caracteres)');
+                    return;
+                }
+                
+                if (!message || message.length > 250) {
+                    showError('Mensagem inválida (máximo 250 caracteres)');
+                    return;
+                }
+                
+                // Desabilitar botão
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Enviando...';
+                showMessageStatus('Enviando mensagem...', 'loading');
+                
+                try {
+                    const response = await fetch('/api/messages/send', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            name: name,
+                            content: message
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Limpar formulário
+                        document.getElementById('userMessage').value = '';
+                        updateCharCounter();
+                        
+                        showMessageStatus('Mensagem enviada com sucesso!', 'success');
+                        
+                        // Ocultar status após 3 segundos
+                        setTimeout(() => {
+                            hideMessageStatus();
+                        }, 3000);
+                        
+                    } else {
+                        showError(result.error || 'Erro ao enviar mensagem');
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Erro ao enviar mensagem:', error);
+                    showError('Erro de conexão. Tente novamente.');
+                } finally {
+                    // Reabilitar botão
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Enviar Mensagem';
+                }
+            });
+        }
+
+        // Inicializar contador de caracteres
+        function initializeCharCounter() {
+            const textarea = document.getElementById('userMessage');
+            const counter = document.getElementById('charCounter');
+            
+            textarea.addEventListener('input', updateCharCounter);
+            
+            function updateCharCounter() {
+                const remaining = 250 - textarea.value.length;
+                counter.textContent = `${remaining} caracteres restantes`;
+                
+                if (remaining < 50) {
+                    counter.style.color = '#e74c3c';
+                } else if (remaining < 100) {
+                    counter.style.color = '#f39c12';
+                } else {
+                    counter.style.color = '#7f8c8d';
+                }
+            }
+        }
+
+        // Carregar status da live
+        async function loadLiveStatus() {
+            try {
+                const response = await fetch('/api/live/status');
+                const result = await response.json();
+                
+                if (result.success && result.live_session) {
+                    updateLivePlayer(result.live_session);
+                }
+                
+            } catch (error) {
+                console.error('❌ Erro ao carregar status da live:', error);
+            }
+        }
+
+        // Atualizar player da live
+        function updateLivePlayer(liveData) {
+            currentLiveSession = liveData;
+            
+            // Atualizar título
+            const titleElement = document.getElementById('liveTitle');
+            if (titleElement) {
+                titleElement.textContent = liveData.title || 'MOEDOR AO VIVO';
+            }
+            
+            // Atualizar Live Oficial
+            updateSingleLivePlayer('liveOficialContainer', liveData.live_oficial_url || liveData.youtube_url, 'LIVE OFICIAL');
+            
+            // Atualizar Live Mosaico
+            updateSingleLivePlayer('liveMosaicoContainer', liveData.live_mosaico_url, 'LIVE MOSAICO');
+            
+            // Atualizar status
+            updateLiveStatus(liveData.active);
+        }
+
+        // Atualizar player individual
+        function updateSingleLivePlayer(containerId, url, title) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            if (url && url.trim()) {
+                // Extrair ID do YouTube
+                const videoId = extractYouTubeId(url);
+                
+                if (videoId) {
+                    container.innerHTML = `
+                        <iframe 
+                            src="https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=1&rel=0&modestbranding=1"
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen
+                            class="live-iframe">
+                        </iframe>
+                    `;
+                } else {
+                    container.innerHTML = `
+                        <div class="live-placeholder">
+                            <div class="placeholder-icon">⚠️</div>
+                            <div class="placeholder-text">URL INVÁLIDA</div>
+                            <div class="placeholder-subtitle">Verifique o link do ${title}</div>
+                        </div>
+                    `;
+                }
+            } else {
+                container.innerHTML = `
+                    <div class="live-placeholder">
+                        <div class="placeholder-icon">📺</div>
+                        <div class="placeholder-text">${title} EM BREVE...</div>
+                        <div class="placeholder-subtitle">Aguarde o início da transmissão</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Extrair ID do YouTube
+        function extractYouTubeId(url) {
+            const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+            const match = url.match(regex);
+            return match ? match[1] : null;
+        }
+
+        // Atualizar status da live
+        function updateLiveStatus(isActive) {
+            const statusElement = document.getElementById('liveStatus');
+            const statusDot = statusElement.querySelector('.status-dot');
+            const statusText = statusElement.querySelector('span');
+            
+            if (isActive) {
+                statusDot.style.backgroundColor = '#e74c3c';
+                statusText.textContent = 'AO VIVO';
+                statusElement.classList.add('live-active');
+            } else {
+                statusDot.style.backgroundColor = '#95a5a6';
+                statusText.textContent = 'OFFLINE';
+                statusElement.classList.remove('live-active');
+            }
+        }
+
+        // Atualizar status de conexão
+        function updateConnectionStatus(connected) {
+            // Implementar indicador visual de conexão se necessário
+        }
+
+        // Mostrar status da mensagem
+        function showMessageStatus(message, type) {
+            const statusElement = document.getElementById('messageStatus');
+            const statusText = statusElement.querySelector('.status-text');
+            
+            statusText.textContent = message;
+            statusElement.className = `message-status ${type}`;
+            statusElement.style.display = 'block';
+        }
+
+        // Ocultar status da mensagem
+        function hideMessageStatus() {
+            const statusElement = document.getElementById('messageStatus');
+            statusElement.style.display = 'none';
+        }
+
+        // Mostrar notificação de mensagem
+        function showMessageNotification(messageData) {
+            // Implementar notificação visual se necessário
+            console.log('💬 Mensagem recebida:', messageData);
+        }
+
+        // Atualizar seção de enquetes
+        function updatePollsSection(pollData) {
+            // Implementar atualização de enquetes
+            console.log('📊 Enquete recebida:', pollData);
+        }
+
+        // Atualizar grid de screenshots
+        function updateScreenshotsGrid(screenshotData) {
+            // Implementar atualização de screenshots
+            console.log('📸 Screenshot recebido:', screenshotData);
+        }
+
+        // Mostrar erro
+        function showError(message) {
+            showMessageStatus(message, 'error');
+            
+            // Ocultar após 5 segundos
+            setTimeout(() => {
+                hideMessageStatus();
+            }, 5000);
+        }
+
+        // Atualizar contador de caracteres (função global)
+        window.updateCharCounter = function() {
+            const textarea = document.getElementById('userMessage');
+            const counter = document.getElementById('charCounter');
+            
+            if (textarea && counter) {
+                const remaining = 250 - textarea.value.length;
+                counter.textContent = `${remaining} caracteres restantes`;
+                
+                if (remaining < 50) {
+                    counter.style.color = '#e74c3c';
+                } else if (remaining < 100) {
+                    counter.style.color = '#f39c12';
+                } else {
+                    counter.style.color = '#7f8c8d';
+                }
+            }
+        };
+    </script>
+    
+    <!-- JavaScript das Enquetes -->
+    <script src="/static/js/user-polls.js"></script>
+</body>
+</html>
+
