@@ -1,0 +1,55 @@
+# Sistema de Live Interativa - MOEDOR AO VIVO
+# Dependências completas para Whisper + Enquetes Inteligentes
+
+# Framework Web - VERSÕES ESTÁVEIS PARA PRODUÇÃO
+Flask==2.3.3
+Flask-SocketIO==5.3.6
+Flask-CORS==4.0.0
+Flask-SQLAlchemy==3.0.5
+
+# WebSocket e Comunicação em Tempo Real - OTIMIZADO
+python-socketio==5.9.0
+eventlet==0.33.3
+
+# Processamento de Imagem e Vídeo
+opencv-python==4.8.1.78
+Pillow==10.0.1
+numpy==1.24.3
+
+# Banco de Dados - OTIMIZADO PARA ALTA CONCORRÊNCIA
+SQLAlchemy==2.0.23
+
+# Utilitários
+python-dotenv==1.0.0
+requests==2.31.0
+
+# Desenvolvimento e Debug
+python-dateutil==2.8.2
+pytz==2023.3
+
+# Processamento adicional
+schedule==1.2.0
+psutil==5.9.6
+
+# Utilitários de Sistema
+click==8.1.7
+colorama==0.4.6
+
+# Processamento de Dados
+jsonschema==4.20.0
+
+# Download de vídeos do YouTube
+yt-dlp==2025.6.9
+
+# Whisper e dependências de IA
+openai-whisper==20231117
+torch==2.1.0
+torchaudio==2.1.0
+
+# Processamento de áudio
+scipy==1.11.3
+
+# Processamento de linguagem natural
+nltk==3.8.1
+textblob==0.17.1
+
