@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overlay Mensagens - MOEDOR AO VIVO</title>
+    
+    <!-- CSS Moderno Grunge -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/overlay-messages-modern.css') }}">
+    
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+</head>
+<body>
+    <!-- Message Container -->
+    <div id="messageContainer" class="message-container">
+        <!-- Mensagens REAIS aparecerão aqui -->
+    </div>
+
+    <!-- JavaScript para Mensagens Reais -->
+    <script src="{{ url_for('static', filename='js/overlay-messages-real.js') }}"></script>
+</body>
+</html>
+
