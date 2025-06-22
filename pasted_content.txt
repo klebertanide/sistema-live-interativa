@@ -1,0 +1,76 @@
+Você fez esse projeto, o layout no geral está perfeito. Algumas coisas não funcionam e precisamos mudar outras. E principalmente, precisamos corrigir algumas coisas. Mantenha o sistema de live como está. O sistema de multicâmeras rtsp vai sair fora e mudará drasticamente. Nada mais de megalomania de 10 cameras. Vamos por mais um embed abaixo.
+
+- Então serão duas lives sendo transmitidas na mesma tela, uma abaixo da outra. No painel de controle, agora, o admin colocará link de duas lives, não de apenas uma.
+Live Oficial e Live Mosaíco.
+
+- O botão de enviar mensagens exibe um erro de banco de dados.
+
+- O whisper precisa captar o audio da live linkada como principal, no momento atual está captando o audio de lugar nenhum.
+
+---
+
+Você pode consultar parte do nosso histórico de erros e acertos:
+https://manus.im/share/2Nn5KYYejvMVmjyX7O2EJd?replay=1
+https://manus.im/share/6vRM8wN1LnGUZIjgNq0tGo?replay=1
+https://manus.im/share/RGhYqUP21B6PMWnBdOmcPx?replay=1
+
+---
+
+ESCOPO:
+
+Projeto em Python PARA RODAR LOCALMENTE.
+
+Contexto: Faço lives no YouTube de humor (humor negro) e pra mim a interação com o público é a mais importante de todas.
+
+Design: Industrial suave e Grunge suave, gere imagens e texturas se precisar. Seja um designer também.
+
+Os sistemas se comunicam um com o outro e são totalmente integrados. Uma mudança no Admin muda instantaneamente a pagina do usuário e o overlay. Não é só mockup. É funcional e integrado. É completamente implementável em Windows e Mac. 
+
+Imagino divido em 3 fronts óbvias:
+
+1- PARA O USUARIO:
+
+Siga detalhadamente e fielmente minha descrição:
+
+- Uma página única, longa e simples.
+- Responsiva para celular e computador.
+- No topo do site um logo pequeno, centralizado.
+- Logo abaixo um embed da live, que já começa rodando, autoplay.
+- Logo abaixo (aqui estamos mudando do escopo original) outro vídeo embedado de outra live, também em autoplay.
+
+Logo abaixo:
+- Um pequeno formulário de "Interaja com nóis!", onde haverão apenas dois campos: o nome e a mensagem (um campo relativamente grande, para caber 250 caracteres)
+
+- O whisper rodará o tempo todo, desde o inicio, em segundo plano durante a live toda CAPTANDO O AUDIO DA LIVE QUE SETAMOS COMO "LIVE OFICIAL" no painel de controle. A cada 15 minutos de live ele salvará o arquivo de texto com tudo o que foi transcrito (Pausas a cada 15min para não sobrecarregar) E no final da live, quando eu apertar um botão no painel de controle gerar letrar de música do programa, ele concatenará todos os arquivos (gerados de 15 em 15 minutos) e pegará os melhores momentos de todos somados, os que tiveram mais risadas, maias pronunciados, os que foram mais chocantes, e geraram mais reações, e gerará uma letra de musica RIMADA. Um resumo do que rolou na live. (Para eu colocar manualmente no SUNO e gerar uma música. AO final do programa. E mostrar para todos).
+
+- Como o Whisper estará rodando, ele gerará enquetes a cada 15 minutos sobre o que está sendo dito, com perguntas polêmicas e engraçadas. O Whisper mesmo detecta os momentos polêmicos e gera as perguntas com duas alternativas para os usuários. Então fica um ciclo de enquetes rodando.
+
+- Ainda usando o Whister como base. Existirá também o "MURAL DE CARAS DERRETIDAS" que tirará screenshots e cromará a foto no rosto. (tendo todas as câmeras como fonte): disparadas quando o whisper detectar que a pessoa está falando demais ou falando de menos. Quando a pessoa gritar ou se exaltar. E elas vão para um grid que terá o design de polaroids sujas.
+
+
+2 - PARA O PAINEL ADMIM (EU E MINHA EQUIPE):
+
+- Podemos ver quantas pessoas estão online no painel
+- Teremos de cara o link para colocar o link da live oficial.
+- Teremos de cara o link para colocar o link da live mosaico.
+- Teremos um botão "GERAR LETRA DA MÚSICA DE HOJE" - CAPTADAS PELO WHISPTER DURANTE O PROGRAMA E RIMADAS (para no final da live fazermos a musica via SUNO manualmente)
+
+
+3 - NO OVERLAY DO OBS:
+
+- Serão vários overlays, um pra cada função.
+- Mensagens: - Mensagem aparece por alguns segundos e some no canto da tela, com design sujo, grunge suave, porém legível, com a mensagem enviada pelo usuario e nome que ele criou 
+- Enquete: - A pergunta com as alternativas depois de alguns  minutos pisca e aparece o resultado. E vai para a próxima enquete. A mesma em que o pessoal está votando no site.
+
+-----
+
+Quero um sistema completo, em ZIP, totalmente funcional, com design grunge, porém clean. Nada de cores neon. Fonte Zurita para títulos e Helvetica Regular para demais utilidades. Preze por design para celular, pois será um site de segunda tela. Deixe o .env facilitado para que eu troque os códigos, referencias, hooks, keys, tudo em um lugar só.
+
+FAÇA FILAS DE EVENTOS, PARA QUE UMA COISA NÃO SOBREPONHA A OUTRA. SE MAIS DE UM USUÁRIO CLICAR JUNTO EM EVENTOS SIMULTANEAMENTE, FAÇA UM EVENTO AGUARDAR O OUTRO. Garantindo que eventos novos só aparecem após o evento anterior concluir a exibição completamente. 
+
+Lembre-se: quero isso funcionando, não é um mock-up, não é um trabalho escolar, não é um brinquedinho para você expor seus talentos.
+
+Isso será rodado localmente. Não use a porta 5000. Use a porta 8081. Garanta que o site não fique caindo. Que não caia quando o CMD/terminal seja minimizado ou fique em segundo plano. Garanta que servidor se mantenha estável para milhares de usuários simultâneos. 
+
+Não me faça gastar mais dinheiro com você. Leve o tempo que precisar para me entregar o projeto pronto e funcionando. Sem páginas faltando. Sem páginas fake. Sem links quebrados. Sem Gambiarras. Sem integração mal feita. Teste 3 vezes antes de OK OK me enviar pronto. 
+
