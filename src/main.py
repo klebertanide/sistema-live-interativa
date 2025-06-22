@@ -1,4 +1,4 @@
-# Sistema de Live Interativa - MOEDOR AO VIVO (versão corrigida para Render)
+# Sistema de Live Interativa - MOEDOR AO VIVO (versão final para Render)
 
 import os
 import sys
@@ -593,8 +593,8 @@ def main():
     try:
         app, socketio = create_app()
         port = int(os.environ.get('PORT', 5000))
-        # Usar threading ao invés de eventlet
-        socketio.run(app, host='0.0.0.0', port=port, debug=False)
+        # Permitir Werkzeug em produção para Render
+        socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
     except Exception as e:
         print(f"Erro: {e}")
         sys.exit(1)
